@@ -1,2 +1,6 @@
 ﻿GridManager:
     Since every Node can only be connected to another node, it makes sense to represent this relation using a linked list.
+
+TODO:
+   It may make sense to make it a 2d grid, where every node holds a reference to the "next" node.
+   Thus making it sort of a linked list with a 2d grid representation

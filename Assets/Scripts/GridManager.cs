@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Extensions;
 using Nodes;
 using ScriptableObjects;
 using UnityEngine;
@@ -10,9 +11,17 @@ public class GridManager : MonoBehaviour
 {
     [SerializeField, Min(0.5f)] float gridSize;
     [SerializeField] NodeScriptableObject[] availableNodes;
-    LinkedList<Node> nodes;
-    LinkedListNode<Node> active;
+    Dictionary<Vector2, Node> grid;
+    Node active;
     Orientation currentOrientation;
+
+
+    public event EventHandler<OnOrientationChangeEventArgs> OnOrientationChange;
+
+    public class OnOrientationChangeEventArgs : EventArgs
+    {
+        public Orientation orientation;
+    }
 
 
     // Debug params
@@ -23,13 +32,18 @@ public class GridManager : MonoBehaviour
     void Awake()
     {
         currentOrientation = Orientation.Up;
-        nodes = new LinkedList<Node>();
+        grid = new Dictionary<Vector2, Node>();
         Debug.Log(nameof(Start));
         Debug.Log(typeof(Start).Name);
         var startNode =
-            new LinkedListNode<Node>(new Start(Vector3.zero, Orientation.Up, availableNodes.GetByName<Start>()));
-        nodes.AddFirst(startNode);
+            new Start(Vector3.zero, Orientation.Up, availableNodes.GetByName<Start>());
+        grid[Vector2.zero] = startNode;
         active = startNode;
+    }
+
+    void Start()
+    {
+        OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
     }
 
     void OnDrawGizmos()
@@ -47,9 +61,8 @@ public class GridManager : MonoBehaviour
 
         if (active != null)
         {
-            var node = active.Value;
-            var orientation = node.Output.Rotate(node.orientation).ToVector2();
-            Gizmos.DrawCube(node.position + Vector3.up + new Vector3(orientation.x, 0f, orientation.y) * 0.5f,
+            var orientation = active.Output.Rotate(active.orientation).ToVector2();
+            Gizmos.DrawCube(active.position + Vector3.up + new Vector3(orientation.x, 0f, orientation.y) * 0.5f,
                 Vector3.one * 0.3f);
         }
     }
@@ -68,12 +81,15 @@ public class GridManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
         {
             currentOrientation = currentOrientation.Next();
+            OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
         }
 
         if (canPlace && Input.GetMouseButtonDown(0))
         {
             var scriptableObject = availableNodes.GetByName<ConveyorBelt>();
-            var node = nodes.AddLast(new ConveyorBelt(gridPoint, currentOrientation, scriptableObject));
+            var node = new ConveyorBelt(gridPoint, currentOrientation, scriptableObject);
+            grid[gridPoint.ToGridCoord()] = node;
+            active.nextNode = node;
             active = node;
         }
     }
@@ -81,14 +97,14 @@ public class GridManager : MonoBehaviour
     bool CanPlaceNode(Vector3 position)
     {
         // Could be a floating point error. But the values are floored before.. TODO: Check if there can be any fp error
-        if (Mathf.Abs(active.Value.position.x - position.x) == 1.0f)
+        if (Mathf.Abs(active.position.x - position.x) == 1.0f)
         {
-            if (active.Value.position.z == position.z) return true;
+            if (active.position.z == position.z) return true;
         }
 
-        if (Mathf.Abs(active.Value.position.z - position.z) == 1.0f)
+        if (Mathf.Abs(active.position.z - position.z) == 1.0f)
         {
-            if (active.Value.position.x == position.x) return true;
+            if (active.position.x == position.x) return true;
         }
 
         return false;

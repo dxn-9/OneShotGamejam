@@ -8,9 +8,9 @@ namespace Nodes
 {
     public enum Orientation : int
     {
-        Left,
-        Down,
         Right,
+        Down,
+        Left,
         Up
     }
 
@@ -53,6 +53,7 @@ namespace Nodes
         public readonly Vector3 position;
         public readonly Orientation orientation;
         public Transform transform;
+        public Node nextNode;
         public bool holdsItem;
         public abstract void Tick(LinkedListNode<Node> next);
         public abstract Orientation Input { get; }
