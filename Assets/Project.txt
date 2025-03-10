@@ -1,0 +1,2 @@
+﻿GridManager:
+    Since every Node can only be connected to another node, it makes sense to represent this relation using a linked list.
