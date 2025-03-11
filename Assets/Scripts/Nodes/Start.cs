@@ -11,11 +11,9 @@ namespace Nodes
         {
         }
 
-        public override void Tick(LinkedListNode<Node> next)
-        {
-        }
 
         public override Orientation Input => Orientation.Down;
         public override Orientation Output => Orientation.Up;
+        public override string NodeName => "Start";
     }
 }

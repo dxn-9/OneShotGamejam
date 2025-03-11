@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using ScriptableObjects;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -53,9 +54,20 @@ namespace Nodes
         public readonly Vector3 position;
         public readonly Orientation orientation;
         public Transform transform;
-        public Node nextNode;
+        [CanBeNull] public Node nextNode;
         public bool holdsItem;
-        public abstract void Tick(LinkedListNode<Node> next);
+
+        public void Tick()
+        {
+            if (holdsItem && nextNode != null)
+            {
+                Debug.DrawLine(position, position + Vector3.up, Color.red, 0.1f);
+                holdsItem = false;
+                nextNode.holdsItem = true;
+            }
+        }
+
+        public abstract string NodeName { get; }
         public abstract Orientation Input { get; }
         public abstract Orientation Output { get; }
     }
