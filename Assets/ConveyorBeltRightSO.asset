@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4f5b7ca7926a426e9a4c7575211e2980, type: 3}
-  m_Name: StartNodeSO
+  m_Name: ConveyorBeltRightSO
   m_EditorClassIdentifier: 
-  prefab: {fileID: 5619320621616218508, guid: 8e80be9059ce9c94f831467baa0cf280, type: 3}
-  nodeName: StartNode
+  prefab: {fileID: 5619320621616218508, guid: e96231ed7cb0ac546aadf610f51f9a20, type: 3}
+  nodeName: ConveyorBeltRight

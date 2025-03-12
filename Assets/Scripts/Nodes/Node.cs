@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Extensions;
 using JetBrains.Annotations;
 using ScriptableObjects;
 using UnityEngine;
+using UnityEngine.Assertions;
 using Object = UnityEngine.Object;
 
 namespace Nodes
@@ -12,33 +14,10 @@ namespace Nodes
         Right,
         Down,
         Left,
-        Up
+        Up,
+        Any
     }
 
-    public static class OrientationExtensions
-    {
-        public static Orientation Next(this Orientation current)
-        {
-            return (Orientation)(((int)current + 1) % 4);
-        }
-
-        // Rotate can be a bit confusing. Think of vectors rotating around in 90 degs. Each next vector is 90 degs rotated
-        public static Orientation Rotate(this Orientation current, Orientation by)
-        {
-            return (Orientation)(((int)current + (int)by + 1) % 4);
-        }
-
-        public static Vector2 ToVector2(this Orientation current)
-            =>
-                current switch
-                {
-                    Orientation.Left => Vector2.left,
-                    Orientation.Down => Vector2.down,
-                    Orientation.Right => Vector2.right,
-                    Orientation.Up => Vector2.up,
-                    _ => throw new Exception("Invalid Orientation: " + current)
-                };
-    }
 
     public abstract class Node
     {

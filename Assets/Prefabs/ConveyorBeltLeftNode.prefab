@@ -25,16 +25,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1140150679419968148}
-  m_LocalRotation: {x: -0.5, y: -0.5, z: 0.5, w: -0.5}
-  m_LocalPosition: {x: 0, y: 0, z: 0.782}
+  m_LocalRotation: {x: -0.0000009834766, y: -0.7071068, z: 0.7071068, w: -0.0000009834766}
+  m_LocalPosition: {x: 0, y: 0, z: -0.338}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5211171003917197655}
-  m_LocalEulerAnglesHint: {x: 90, y: -270, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: -180, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0.372, y: 0.503}
+  m_AnchoredPosition: {x: 0.884, y: 0.503}
   m_SizeDelta: {x: 19.09, y: 2}
   m_Pivot: {x: 0, y: 0}
 --- !u!23 &8440948954005789072
@@ -294,7 +294,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4754710829413282754}
   m_Layer: 0
-  m_Name: CurvedConveyorBeltNode
+  m_Name: ConveyorBeltLeftNode
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -376,16 +376,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8208364107055538985}
-  m_LocalRotation: {x: -0, y: -0.7071068, z: 0.7071068, w: 0}
-  m_LocalPosition: {x: 0, y: 0, z: -0.331}
+  m_LocalRotation: {x: -0.49991277, y: -0.49991277, z: 0.50008726, w: -0.50008726}
+  m_LocalPosition: {x: 0, y: 0, z: 0.333}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5211171003917197655}
-  m_LocalEulerAnglesHint: {x: 90, y: -90, z: 0}
+  m_LocalEulerAnglesHint: {x: 90.01999, y: -180, z: 90}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0.239, y: 0.503}
+  m_AnchoredPosition: {x: 0.298, y: 0.503}
   m_SizeDelta: {x: 19.09, y: 2}
   m_Pivot: {x: 0, y: 0}
 --- !u!23 &9074296872309002642

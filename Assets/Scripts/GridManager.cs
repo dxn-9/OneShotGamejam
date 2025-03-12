@@ -20,11 +20,13 @@ public class GridManager : MonoBehaviour
     [SerializeField] NodeScriptableObject[] availableNodes;
     [SerializeField] UIManager uiManager;
     [SerializeField] float simulationTickDuration = 0.3f;
+
     Dictionary<Vector2, Node> grid;
     Node active;
     Orientation currentOrientation;
     Mode mode;
     float currentSimulationDuration;
+    Vector3 endPosition;
 
 
     public event EventHandler<OnOrientationChangeEventArgs> OnOrientationChange;
@@ -42,14 +44,23 @@ public class GridManager : MonoBehaviour
 
     void Awake()
     {
+        endPosition = new Vector3(5f, 0f, 2f);
         currentSimulationDuration = simulationTickDuration;
         mode = Mode.Building;
         currentOrientation = Orientation.Up;
         grid = new Dictionary<Vector2, Node>();
         var startNode =
-            new Start(Vector3.zero, Orientation.Up, availableNodes.GetByName<Start>());
+            new StartNode(Vector3.zero, Orientation.Up, availableNodes.GetByName<StartNode>());
         grid[Vector2.zero] = startNode;
         active = startNode;
+
+        PlaceEndNode();
+    }
+
+    void PlaceEndNode()
+    {
+        grid[endPosition.ToGridCoord()] =
+            new EndNode(endPosition, Orientation.Any, availableNodes.GetByName<EndNode>());
     }
 
     void Start()
@@ -106,7 +117,7 @@ public class GridManager : MonoBehaviour
         var screenRay = Camera.main.ScreenPointToRay(screenMouse);
         xzIntersection = screenRay.origin - screenRay.direction * (screenRay.origin.y / screenRay.direction.y);
 
-        var gridPoint = new Vector3(Mathf.Round(xzIntersection.x), 0f, Mathf.Round(xzIntersection.z));
+        var gridPoint = CalculateGridPoint(xzIntersection);
         canPlace = CanPlaceNode(gridPoint);
 
 
@@ -121,6 +132,13 @@ public class GridManager : MonoBehaviour
         {
             if (canPlace && Input.GetMouseButtonDown(0))
             {
+                Vector3 dir = gridPoint - active.position;
+                Orientation newOrientation = OrientationExtensions.FromVector2(dir.ToGridCoord());
+                
+                if (newOrientation != currentOrientation)
+                {
+                    
+                }
                 var scriptableObject = availableNodes.GetByName<ConveyorBelt>();
                 var node = new ConveyorBelt(gridPoint, currentOrientation, scriptableObject);
                 grid[gridPoint.ToGridCoord()] = node;
@@ -147,6 +165,14 @@ public class GridManager : MonoBehaviour
             // Mode = EndLevel
             mode = Mode.Building; // TODO: implement end level.
         }
+    }
+
+    Vector3 CalculateGridPoint(Vector3 xzIntersection)
+    {
+        var gridPoint = new Vector3(Mathf.Round(xzIntersection.x), 0f, Mathf.Round(xzIntersection.z));
+        gridPoint = active.position + (gridPoint - active.position).normalized;
+        gridPoint = new Vector3(Mathf.Round(gridPoint.x), 0f, (gridPoint.z));
+        return gridPoint;
     }
 
     bool CanPlaceNode(Vector3 position)
