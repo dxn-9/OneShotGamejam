@@ -12,12 +12,12 @@ public class UIManager : MonoBehaviour
 
     void Awake()
     {
-        gridManager.OnOrientationChange += GridManagerOnOnOrientationChange;
+        // gridManager.OnOrientationChange += GridManagerOnOnOrientationChange;
         simulateButton.onClick.AddListener(() => OnSimulateButton?.Invoke(this, EventArgs.Empty));
     }
 
-    void GridManagerOnOnOrientationChange(object sender, GridManager.OnOrientationChangeEventArgs e)
-    {
-        orientationDisplay.localRotation = Quaternion.Euler(0f, 0f, (int)e.orientation * -90f);
-    }
+    // void GridManagerOnOnOrientationChange(object sender, GridManager.OnOrientationChangeEventArgs e)
+    // {
+    //     orientationDisplay.localRotation = Quaternion.Euler(0f, 0f, (int)e.orientation * -90f);
+    // }
 }

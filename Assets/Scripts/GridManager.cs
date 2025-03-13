@@ -22,19 +22,21 @@ public class GridManager : MonoBehaviour
     [SerializeField] float simulationTickDuration = 0.3f;
 
     Dictionary<Vector2, Node> grid;
+
     Node active;
-    Orientation currentOrientation;
+
+    // Vector2 currentOrientation;
     Mode mode;
     float currentSimulationDuration;
     Vector3 endPosition;
 
 
-    public event EventHandler<OnOrientationChangeEventArgs> OnOrientationChange;
+    // public event EventHandler<OnOrientationChangeEventArgs> OnOrientationChange;
 
-    public class OnOrientationChangeEventArgs : EventArgs
-    {
-        public Orientation orientation;
-    }
+    // public class OnOrientationChangeEventArgs : EventArgs
+    // {
+    //     public Vector2 orientation;
+    // }
 
 
     // Debug params
@@ -47,7 +49,7 @@ public class GridManager : MonoBehaviour
         endPosition = new Vector3(5f, 0f, 2f);
         currentSimulationDuration = simulationTickDuration;
         mode = Mode.Building;
-        currentOrientation = Vector2.up;
+        // currentOrientation = Vector2.up;
         grid = new Dictionary<Vector2, Node>();
         var startNode =
             new StartNode(Vector3.zero, Vector2.up, availableNodes.GetByName<StartNode>());
@@ -65,7 +67,7 @@ public class GridManager : MonoBehaviour
 
     void Start()
     {
-        OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
+        // OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
         uiManager.OnSimulateButton += OnStartSimulation;
     }
 
@@ -105,7 +107,9 @@ public class GridManager : MonoBehaviour
         if (active != null)
         {
             var angle = Vector2.SignedAngle(active.Output, active.orientation);
-            var orientation = new Vector2()
+            var rotation = Quaternion.Euler(0f, 0f, angle);
+
+            var orientation = rotation * active.Output;
             Gizmos.DrawCube(active.position + Vector3.up + new Vector3(orientation.x, 0f, orientation.y) * 0.5f,
                 Vector3.one * 0.3f);
         }
@@ -124,8 +128,7 @@ public class GridManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            currentOrientation = currentOrientation.Next();
-            OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
+            // OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
         }
 
 
@@ -133,22 +136,31 @@ public class GridManager : MonoBehaviour
         {
             if (canPlace && Input.GetMouseButtonDown(0))
             {
-                Vector3 dir = gridPoint - active.position;
-                Orientation newOrientation = OrientationExtensions.FromVector2(dir.ToGridCoord());
+                Vector2 dir = (gridPoint - active.position).ToGridCoord();
 
-                if (newOrientation != currentOrientation)
+                // TODO: Instead of destroying the game object, it should be reused for the new conveyor belt
+                if (dir != active.orientation)
                 {
-                    var angle = Vector2.SignedAngle(newOrientation.ToVector2(), currentOrientation.ToVector2());
-                    var rotation = (Orientation)(((int)currentOrientation + (int)(angle / 90f)) % 4);
-
-                    Debug.Log(angle);
-                    Debug.Log(rotation);
+                    var angle = Vector2.SignedAngle(dir, active.orientation);
+                    if (angle == 90f)
+                    {
+                        Destroy(active.transform.gameObject);
+                        grid[active.position.ToGridCoord()] =
+                            new ConveyorBeltRight(active.position, active.orientation,
+                                availableNodes.GetByName<ConveyorBeltRight>());
+                    }
+                    else if (angle == -90f)
+                    {
+                        Destroy(active.transform.gameObject);
+                        grid[active.position.ToGridCoord()] =
+                            new ConveyorBeltLeft(active.position, active.orientation,
+                                availableNodes.GetByName<ConveyorBeltLeft>());
+                    }
                 }
 
-                currentOrientation = newOrientation;
 
                 var scriptableObject = availableNodes.GetByName<ConveyorBelt>();
-                var node = new ConveyorBelt(gridPoint, currentOrientation, scriptableObject);
+                var node = new ConveyorBelt(gridPoint, dir, scriptableObject);
                 grid[gridPoint.ToGridCoord()] = node;
                 active.nextNode = node;
                 active = node;
