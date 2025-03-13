@@ -47,10 +47,10 @@ public class GridManager : MonoBehaviour
         endPosition = new Vector3(5f, 0f, 2f);
         currentSimulationDuration = simulationTickDuration;
         mode = Mode.Building;
-        currentOrientation = Orientation.Up;
+        currentOrientation = Vector2.up;
         grid = new Dictionary<Vector2, Node>();
         var startNode =
-            new StartNode(Vector3.zero, Orientation.Up, availableNodes.GetByName<StartNode>());
+            new StartNode(Vector3.zero, Vector2.up, availableNodes.GetByName<StartNode>());
         grid[Vector2.zero] = startNode;
         active = startNode;
 
@@ -60,7 +60,7 @@ public class GridManager : MonoBehaviour
     void PlaceEndNode()
     {
         grid[endPosition.ToGridCoord()] =
-            new EndNode(endPosition, Orientation.Any, availableNodes.GetByName<EndNode>());
+            new EndNode(endPosition, Vector2.zero, availableNodes.GetByName<EndNode>());
     }
 
     void Start()
@@ -104,7 +104,8 @@ public class GridManager : MonoBehaviour
 
         if (active != null)
         {
-            var orientation = active.Output.Rotate(active.orientation).ToVector2();
+            var angle = Vector2.SignedAngle(active.Output, active.orientation);
+            var orientation = new Vector2()
             Gizmos.DrawCube(active.position + Vector3.up + new Vector3(orientation.x, 0f, orientation.y) * 0.5f,
                 Vector3.one * 0.3f);
         }
@@ -134,11 +135,18 @@ public class GridManager : MonoBehaviour
             {
                 Vector3 dir = gridPoint - active.position;
                 Orientation newOrientation = OrientationExtensions.FromVector2(dir.ToGridCoord());
-                
+
                 if (newOrientation != currentOrientation)
                 {
-                    
+                    var angle = Vector2.SignedAngle(newOrientation.ToVector2(), currentOrientation.ToVector2());
+                    var rotation = (Orientation)(((int)currentOrientation + (int)(angle / 90f)) % 4);
+
+                    Debug.Log(angle);
+                    Debug.Log(rotation);
                 }
+
+                currentOrientation = newOrientation;
+
                 var scriptableObject = availableNodes.GetByName<ConveyorBelt>();
                 var node = new ConveyorBelt(gridPoint, currentOrientation, scriptableObject);
                 grid[gridPoint.ToGridCoord()] = node;

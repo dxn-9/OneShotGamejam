@@ -9,29 +9,29 @@ using Object = UnityEngine.Object;
 
 namespace Nodes
 {
-    public enum Orientation : int
-    {
-        Right,
-        Down,
-        Left,
-        Up,
-        Any
-    }
+    // public enum Orientation : int
+    // {
+    //     Right,
+    //     Down,
+    //     Left,
+    //     Up,
+    //     Any
+    // }
 
 
     public abstract class Node
     {
-        protected Node(Vector3 position, Orientation orientation, NodeScriptableObject so)
+        protected Node(Vector3 position, Vector2 orientation, NodeScriptableObject so)
         {
             this.position = position;
             this.orientation = orientation;
-            var orientationVec = orientation.ToVector2();
+            var orientationVec = orientation;
             var rotation = Quaternion.LookRotation(new Vector3(orientationVec.x, 0f, orientationVec.y));
             transform = Object.Instantiate(so.prefab, position, rotation).transform;
         }
 
         public readonly Vector3 position;
-        public readonly Orientation orientation;
+        public readonly Vector2 orientation;
         public Transform transform;
         [CanBeNull] public Node nextNode;
         public bool holdsItem;
@@ -47,7 +47,7 @@ namespace Nodes
         }
 
         public abstract string NodeName { get; }
-        public abstract Orientation Input { get; }
-        public abstract Orientation Output { get; }
+        public abstract Vector2 Input { get; }
+        public abstract Vector2 Output { get; }
     }
 }
