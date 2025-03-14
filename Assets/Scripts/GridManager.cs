@@ -5,13 +5,30 @@ using Extensions;
 using Nodes;
 using ScriptableObjects;
 using UnityEngine;
+using NodeGrid = System.Collections.Generic.Dictionary<UnityEngine.Vector2, Nodes.Node>;
 
 
-enum Mode
+public enum Mode
 {
     Building,
     Simulation,
     EndLevel
+}
+
+
+public class GridPointComparer : IEqualityComparer<Vector2>
+{
+    private const float Epsilon = 0.001f;
+
+    public bool Equals(Vector2 a, Vector2 b)
+    {
+        return Vector2.Distance(a, b) < Epsilon;
+    }
+
+    public int GetHashCode(Vector2 obj)
+    {
+        return Mathf.RoundToInt(obj.x * 100) * 1000 + Mathf.RoundToInt(obj.y * 100);
+    }
 }
 
 public class GridManager : MonoBehaviour
@@ -20,24 +37,16 @@ public class GridManager : MonoBehaviour
     [SerializeField] NodeScriptableObject[] availableNodes;
     [SerializeField] UIManager uiManager;
     [SerializeField] float simulationTickDuration = 0.3f;
+    [SerializeField] Transform itemIndicator;
+    [SerializeField] Transform endPosition;
 
-    Dictionary<Vector2, Node> grid;
+    NodeGrid grid;
+    int tickCount;
 
     Node active;
 
-    // Vector2 currentOrientation;
-    Mode mode;
+    public Mode mode;
     float currentSimulationDuration;
-    Vector3 endPosition;
-
-
-    // public event EventHandler<OnOrientationChangeEventArgs> OnOrientationChange;
-
-    // public class OnOrientationChangeEventArgs : EventArgs
-    // {
-    //     public Vector2 orientation;
-    // }
-
 
     // Debug params
     Vector3 xzIntersection;
@@ -46,49 +55,53 @@ public class GridManager : MonoBehaviour
 
     void Awake()
     {
-        endPosition = new Vector3(5f, 0f, 2f);
+        Debug.Log("Awake called");
         currentSimulationDuration = simulationTickDuration;
         mode = Mode.Building;
-        // currentOrientation = Vector2.up;
-        grid = new Dictionary<Vector2, Node>();
+        grid = new Dictionary<Vector2, Node>(new GridPointComparer());
         var startNode =
             new StartNode(Vector3.zero, Vector2.up, availableNodes.GetByName<StartNode>());
         grid[Vector2.zero] = startNode;
         active = startNode;
+        startNode.ReceiveItem(Vector2.zero);
 
         PlaceEndNode();
     }
 
     void PlaceEndNode()
     {
-        grid[endPosition.ToGridCoord()] =
-            new EndNode(endPosition, Vector2.zero, availableNodes.GetByName<EndNode>());
+        grid[endPosition.position.ToGridCoord()] =
+            new EndNode(endPosition.position, Vector2.zero, availableNodes.GetByName<EndNode>());
     }
 
     void Start()
     {
-        // OnOrientationChange?.Invoke(this, new OnOrientationChangeEventArgs { orientation = currentOrientation });
+        Debug.Log("Start");
         uiManager.OnSimulateButton += OnStartSimulation;
     }
+
 
     void OnStartSimulation(object sender, EventArgs e)
     {
         mode = Mode.Simulation;
         active = grid[Vector2.zero];
-        active.holdsItem = true;
+        active.ReceiveItem(Vector2.zero);
+        Debug.Log("Simulation Start");
     }
 
     // Ticks the active node to transport the item. If it returns true it means we've finished traversing the list.
-    bool SimulationStep()
+    void SimulationStep()
     {
-        if (active.nextNode == null)
+        foreach (var node in grid.Values)
         {
-            return true;
+            node.Tick(grid, tickCount);
+            if (node.holdsItem)
+            {
+                itemIndicator.position = node.position + Vector3.up;
+            }
         }
 
-        active.Tick();
-        active = active.nextNode;
-        return false;
+        tickCount++;
     }
 
     void OnDrawGizmos()
@@ -139,7 +152,7 @@ public class GridManager : MonoBehaviour
                 Vector2 dir = (gridPoint - active.position).ToGridCoord();
 
                 // TODO: Instead of destroying the game object, it should be reused for the new conveyor belt
-                if (dir != active.orientation)
+                if (dir != active.orientation && active is MultiDir)
                 {
                     var angle = Vector2.SignedAngle(dir, active.orientation);
                     if (angle == 90f)
@@ -162,7 +175,6 @@ public class GridManager : MonoBehaviour
                 var scriptableObject = availableNodes.GetByName<ConveyorBelt>();
                 var node = new ConveyorBelt(gridPoint, dir, scriptableObject);
                 grid[gridPoint.ToGridCoord()] = node;
-                active.nextNode = node;
                 active = node;
             }
         }
@@ -171,11 +183,7 @@ public class GridManager : MonoBehaviour
             currentSimulationDuration -= Time.deltaTime;
             if (currentSimulationDuration <= 0.0f)
             {
-                if (SimulationStep())
-                {
-                    Debug.Log("Simulation Halted at: " + active.position + " " + active.NodeName);
-                    mode = Mode.EndLevel;
-                }
+                SimulationStep();
 
                 currentSimulationDuration = simulationTickDuration + Mathf.Abs(currentSimulationDuration);
             }
@@ -190,6 +198,7 @@ public class GridManager : MonoBehaviour
     Vector3 CalculateGridPoint(Vector3 xzIntersection)
     {
         var gridPoint = new Vector3(Mathf.Round(xzIntersection.x), 0f, Mathf.Round(xzIntersection.z));
+        if (active == null) return gridPoint + Vector3.zero;
         gridPoint = active.position + (gridPoint - active.position).normalized;
         gridPoint = new Vector3(Mathf.Round(gridPoint.x), 0f, (gridPoint.z));
         return gridPoint;
