@@ -7,8 +7,16 @@ namespace Extensions
 {
     public static class Vector3Ext
     {
-        public static Vector2 ToGridCoord(this Vector3 v) =>
-            new Vector2(Mathf.Round(v.x), Mathf.Round(v.z));
+        public static Vector3 SnapToGrid(this Vector3 v) =>
+            new Vector3(Mathf.Round(v.x), Mathf.Round(v.y), Mathf.Round(v.z));
+
+        public static Vector2 ToDir(this Vector3 v) => new Vector2(Mathf.Round(v.x), Mathf.Round(v.z));
+    }
+
+    public static class Vector2Ext
+    {
+        public static Vector3 ToGridCoord(this Vector2 v) =>
+            new Vector3(Mathf.Round(v.x), 0, Mathf.Round(v.y));
     }
 
     // public static class OrientationExtensions

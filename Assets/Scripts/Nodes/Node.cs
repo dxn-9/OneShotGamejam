@@ -6,7 +6,6 @@ using ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Object = UnityEngine.Object;
-using NodeGrid = System.Collections.Generic.Dictionary<UnityEngine.Vector2, Nodes.Node>;
 
 
 namespace Nodes
@@ -27,17 +26,17 @@ namespace Nodes
         {
             this.position = position;
             this.orientation = orientation;
-            var orientationVec = orientation;
-            var rotation = Quaternion.LookRotation(new Vector3(orientationVec.x, 0f, orientationVec.y));
-            transform = Object.Instantiate(so.prefab, position, rotation).transform;
+            // var orientationVec = orientation;
+            // var rotation = Quaternion.LookRotation(new Vector3(orientationVec.x, 0f, orientationVec.y));
+            // transform = Object.Instantiate(so.prefab, position, rotation).transform;
         }
 
         public readonly Vector3 position;
         public readonly Vector2 orientation;
-        public Transform transform;
         public bool holdsItem;
         public bool nextTickHoldItem; // If in the next tick it should hold item
         public int updateTick = -1;
+        public bool markedForDeletion;
 
         public Vector2 CalculateOutputWS()
         {
@@ -57,5 +56,6 @@ namespace Nodes
         public abstract string NodeName { get; }
         public abstract Vector2 Input { get; }
         public abstract Vector2 Output { get; }
+        public abstract bool CanBeDeleted { get; }
     }
 }

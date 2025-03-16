@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using Extensions;
 using ScriptableObjects;
 using UnityEngine;
-using NodeGrid = System.Collections.Generic.Dictionary<UnityEngine.Vector2, Nodes.Node>;
 
 namespace Nodes
 {
@@ -16,6 +16,7 @@ namespace Nodes
 
         public override Vector2 Input => Vector2.zero;
         public override Vector2 Output => Vector2.zero;
+        public override bool CanBeDeleted => false;
 
 
         public override void Tick(NodeGrid grid, int tickCount)
@@ -50,13 +51,25 @@ namespace Nodes
             for (int i = -1; i <= 1; i++)
             {
                 if (i == 0) continue;
-                var x = new Vector2(position.x + i, position.z);
-                var y = new Vector2(position.x, position.z + i);
+                var x = new Vector3(position.x + i, position.y, position.z).SnapToGrid();
+                var y = new Vector3(position.x, position.y, position.z + i).SnapToGrid();
                 Node neighbour;
-                if (grid.TryGetValue(x, out neighbour) || grid.TryGetValue(y, out neighbour))
+                if (grid.TryGetValue(x, out neighbour))
                 {
-                    node = neighbour;
-                    return true;
+                    if (neighbour.CalculateInputWS() == (neighbour.position - position).ToDir())
+                    {
+                        node = neighbour;
+                        return true;
+                    }
+                }
+
+                if (grid.TryGetValue(y, out neighbour))
+                {
+                    if (neighbour.CalculateInputWS() == (neighbour.position - position).ToDir())
+                    {
+                        node = neighbour;
+                        return true;
+                    }
                 }
             }
 
