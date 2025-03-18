@@ -5,6 +5,7 @@ using Extensions;
 using Nodes;
 using ScriptableObjects;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 
 // TODO: Refactor this class. it's doing a lot more than it should.
@@ -74,6 +75,10 @@ public class GridManager : MonoBehaviour
     {
         if (Game.I.gameMode == Mode.Building)
         {
+            // Skip over ui elements
+            if (EventSystem.current.IsPointerOverGameObject())
+                return;
+
             // Find the xz intersection
             Vector2 screenMouse = Input.mousePosition;
             var screenRay = Camera.main.ScreenPointToRay(screenMouse);
@@ -148,7 +153,6 @@ public class GridManager : MonoBehaviour
             }
             else if (Input.GetKeyDown(KeyCode.Escape))
             {
-                Debug.Log("Unmarking");
                 // Unmark all nodes
                 foreach (var node in grid.Values)
                 {

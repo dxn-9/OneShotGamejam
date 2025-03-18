@@ -1,6 +1,7 @@
 ﻿using System;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum Mode
 {
@@ -28,6 +29,9 @@ public class Game : MonoBehaviour
             I = this;
         }
 
+
+        SceneManager.LoadScene("UIScene", LoadSceneMode.Additive);
+
         gameMode = Mode.Building;
         gridManager.OnNodePlace += (sender, args) => level.AddPlayerNode(args.node);
         gridManager.OnNodeChange += (sender, args) => level.ChangePlayerNode(args.node);
@@ -42,6 +46,11 @@ public class Game : MonoBehaviour
 
     void OnStartSimulation(object sender, EventArgs e)
     {
+        foreach (var node in gridManager.grid.Values)
+        {
+            node.holdsItem = false;
+        }
+
         gridManager.active = gridManager.grid.GetStart();
         gridManager.active.ReceiveItem(Vector2.zero);
         gameMode = Mode.Simulation;
