@@ -168,7 +168,21 @@ public class GridManager : MonoBehaviour
                                 OnNodeDelete?.Invoke(this, new NodeEventArgs { node = node });
                             }
 
-                            var fromNode = markedActive.position + -markedActive.CalculateInputWS().ToGridCoord();
+                            Vector3 fromNode = Vector3.zero;
+                            // Try to get the closest node to the deleted one, we need to scan the area since we dont know the range of the previous one.
+                            // Ideally, i should be at max the max range of a node
+                            for (int i = 1; i <= 2; i++)
+                            {
+                                if (grid.ContainsKey(
+                                        markedActive.position + -markedActive.CalculateInputWS().ToGridCoord() * i
+                                    ))
+                                {
+                                    fromNode =
+                                        markedActive.position + -markedActive.CalculateInputWS().ToGridCoord() * i;
+                                    break;
+                                }
+                            }
+
                             active = grid[fromNode];
                         }
                     }
@@ -215,7 +229,7 @@ public class GridManager : MonoBehaviour
     {
         var gridPoint = xzIntersection.SnapToGrid();
         if (active == null) return gridPoint + Vector3.zero;
-        gridPoint = active.position + (gridPoint - active.position).normalized;
+        gridPoint = active.position + (gridPoint - active.position).normalized * active.Range;
         gridPoint = gridPoint.SnapToGrid();
         return gridPoint;
     }
@@ -227,12 +241,12 @@ public class GridManager : MonoBehaviour
 
         if (!Game.I.level.points.Contains(position)) return false;
 
-        if (Mathf.Abs(active.position.x - position.x) == 1.0f)
+        if (Mathf.RoundToInt(Mathf.Abs(active.position.x - position.x)) == active.Range)
         {
             if (active.position.z == position.z) return true;
         }
 
-        if (Mathf.Abs(active.position.z - position.z) == 1.0f)
+        if (Mathf.RoundToInt(Mathf.Abs(active.position.z - position.z)) == active.Range)
         {
             if (active.position.x == position.x) return true;
         }

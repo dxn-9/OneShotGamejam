@@ -34,6 +34,7 @@ namespace Nodes
         public bool nextTickHoldItem; // If in the next tick it should hold item
         public int updateTick = -1;
         public bool markedForDeletion;
+        public virtual int Range => 1;
 
         public Vector2 CalculateOutputWS()
         {

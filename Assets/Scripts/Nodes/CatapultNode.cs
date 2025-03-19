@@ -12,8 +12,7 @@ namespace Nodes
         {
         }
 
-        float CatapultDistance = 2f;
-
+        public override int Range => 2;
         public override Vector2 Input => Vector2.up;
         public override Vector2 Output => Vector2.up;
         public override bool CanBeDeleted => true;
@@ -52,7 +51,7 @@ namespace Nodes
 
         public override bool HasNextNode(NodeGrid grid, out Node node)
         {
-            var nextNode = position.SnapToGrid() + CalculateOutputWS().ToGridCoord() * CatapultDistance;
+            var nextNode = position.SnapToGrid() + CalculateOutputWS().ToGridCoord() * Range;
             if (grid.TryGetValue(nextNode, out var neighbour))
             {
                 node = neighbour;

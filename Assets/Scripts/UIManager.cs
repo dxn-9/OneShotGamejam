@@ -20,6 +20,15 @@ public class UIManager : MonoBehaviour
         SetCurrentNodeUI(0);
     }
 
+    void Start()
+    {
+        for (int i = 0; i < nodesUI.Length; i++)
+        {
+            int index = i;
+            nodesUI[i].button.onClick.AddListener(() => SetCurrentNodeUI(index));
+        }
+    }
+
     void SetNodeActive(UINode nodeUI, bool active)
     {
         nodeUI.image.color = active
@@ -29,6 +38,7 @@ public class UIManager : MonoBehaviour
 
     public void SetCurrentNodeUI(int index)
     {
+        Debug.Log(index);
         for (int i = 0; i < nodesUI.Length; i++)
         {
             SetNodeActive(nodesUI[i], i == index);
