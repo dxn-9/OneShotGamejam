@@ -6,8 +6,8 @@ namespace Nodes
 {
     public class EndNode : Node
     {
-        public EndNode(Vector3 position, Vector2 orientation, NodeScriptableObject so) : base(position, orientation,
-            so)
+        public EndNode(Vector3 position, Vector2 orientation) : base(position, orientation
+        )
         {
         }
 

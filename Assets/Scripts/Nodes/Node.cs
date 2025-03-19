@@ -22,13 +22,10 @@ namespace Nodes
 
     public abstract class Node
     {
-        protected Node(Vector3 position, Vector2 orientation, NodeScriptableObject so)
+        protected Node(Vector3 position, Vector2 orientation)
         {
             this.position = position;
             this.orientation = orientation;
-            // var orientationVec = orientation;
-            // var rotation = Quaternion.LookRotation(new Vector3(orientationVec.x, 0f, orientationVec.y));
-            // transform = Object.Instantiate(so.prefab, position, rotation).transform;
         }
 
         public readonly Vector3 position;

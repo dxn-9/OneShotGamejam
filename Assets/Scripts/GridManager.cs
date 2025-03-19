@@ -45,9 +45,9 @@ public class GridManager : MonoBehaviour
     void Start()
     {
         grid[Game.I.level.startPoint] =
-            new StartNode(Game.I.level.startPoint, Vector2.up, availableNodes.GetByName<StartNode>());
+            new StartNode(Game.I.level.startPoint, Vector2.up);
         grid[Game.I.level.endPoint] =
-            new EndNode(Game.I.level.endPoint, Vector2.up, availableNodes.GetByName<EndNode>());
+            new EndNode(Game.I.level.endPoint, Vector2.up);
         active = grid.GetStart();
         grid.GetStart().ReceiveItem(Vector2.zero);
     }
@@ -71,6 +71,55 @@ public class GridManager : MonoBehaviour
         tickCount++;
     }
 
+
+    void PlaceNode(Vector3 gridPoint)
+    {
+        if (Utils.typeMap.TryGetValue(Game.I.SelectedNodeSO.nodeName, out var nodeClass))
+        {
+            Debug.Log(Game.I.SelectedNodeSO.nodeName);
+            Vector2 dir = (gridPoint - active.position).ToDir();
+            if (dir != active.orientation && active is MultiDir multiDirNode)
+            {
+                var angle = Vector2.SignedAngle(dir, active.orientation);
+                if (angle == 90f)
+                {
+                    var rightType = multiDirNode.GetRight;
+                    if (typeof(Node).IsAssignableFrom(rightType))
+                    {
+                        Debug.Log("Left type" + rightType);
+                        grid[active.position.SnapToGrid()] =
+                            (Node)Activator.CreateInstance(rightType, active.position, active.orientation);
+                    }
+
+                    OnNodeChange?.Invoke(this, new NodeEventArgs() { node = grid[active.position.SnapToGrid()] });
+                }
+                else if (angle == -90f)
+                {
+                    var leftType = multiDirNode.GetLeft;
+                    if (typeof(Node).IsAssignableFrom(leftType))
+                    {
+                        Debug.Log("Right type" + leftType);
+                        grid[active.position.SnapToGrid()] =
+                            (Node)Activator.CreateInstance(leftType, active.position, active.orientation);
+                    }
+
+                    OnNodeChange?.Invoke(this, new NodeEventArgs() { node = grid[active.position.SnapToGrid()] });
+                }
+            }
+
+
+            var node = (Node)Activator.CreateInstance(nodeClass, gridPoint, dir);
+            grid[gridPoint.SnapToGrid()] = node;
+            active = node;
+            OnNodePlace?.Invoke(this, new NodeEventArgs() { node = grid[gridPoint.SnapToGrid()] });
+        }
+        else
+        {
+            Debug.Log("Cannot instantiate: " + Game.I.SelectedNodeSO);
+        }
+    }
+
+
     void Update()
     {
         if (Game.I.gameMode == Mode.Building)
@@ -90,33 +139,7 @@ public class GridManager : MonoBehaviour
 
             if (canPlace && Input.GetMouseButtonDown(0))
             {
-                Vector2 dir = (gridPoint - active.position).ToDir();
-
-                if (dir != active.orientation && active is MultiDir)
-                {
-                    var angle = Vector2.SignedAngle(dir, active.orientation);
-                    if (angle == 90f)
-                    {
-                        grid[active.position.SnapToGrid()] =
-                            new ConveyorBeltRight(active.position, active.orientation,
-                                availableNodes.GetByName<ConveyorBeltRight>());
-                        OnNodeChange?.Invoke(this, new NodeEventArgs() { node = grid[active.position.SnapToGrid()] });
-                    }
-                    else if (angle == -90f)
-                    {
-                        grid[active.position.SnapToGrid()] =
-                            new ConveyorBeltLeft(active.position, active.orientation,
-                                availableNodes.GetByName<ConveyorBeltLeft>());
-                        OnNodeChange?.Invoke(this, new NodeEventArgs() { node = grid[active.position.SnapToGrid()] });
-                    }
-                }
-
-
-                var scriptableObject = availableNodes.GetByName<ConveyorBelt>();
-                var node = new ConveyorBelt(gridPoint, dir, scriptableObject);
-                grid[gridPoint.SnapToGrid()] = node;
-                active = node;
-                OnNodePlace?.Invoke(this, new NodeEventArgs() { node = grid[gridPoint.SnapToGrid()] });
+                PlaceNode(gridPoint);
             }
             else if (Input.GetMouseButtonDown(1))
             {

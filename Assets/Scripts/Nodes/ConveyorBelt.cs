@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Extensions;
 using ScriptableObjects;
 using UnityEngine;
@@ -7,8 +8,8 @@ namespace Nodes
 {
     public class ConveyorBelt : Node, MultiDir
     {
-        public ConveyorBelt(Vector3 position, Vector2 orientation, NodeScriptableObject so) : base(position,
-            orientation, so)
+        public ConveyorBelt(Vector3 position, Vector2 orientation) : base(position,
+            orientation)
         {
         }
 
@@ -63,5 +64,7 @@ namespace Nodes
         }
 
         public override string NodeName => "ConveyorBelt";
+        public Type GetLeft => typeof(ConveyorBeltLeft);
+        public Type GetRight => typeof(ConveyorBeltRight);
     }
 }

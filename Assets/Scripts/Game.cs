@@ -1,4 +1,5 @@
 ﻿using System;
+using ScriptableObjects;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,6 +22,8 @@ public class Game : MonoBehaviour
     [SerializeField] CameraController camera;
     [SerializeField] public Level level;
     [SerializeField] public Transform itemIndicator;
+
+    public NodeScriptableObject SelectedNodeSO => uiManager.GetSelectedNodeSO();
 
     void Awake()
     {

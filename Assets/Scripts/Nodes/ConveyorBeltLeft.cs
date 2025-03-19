@@ -7,9 +7,9 @@ namespace Nodes
 {
     public class ConveyorBeltLeft : ConveyorBeltRight
     {
-        public ConveyorBeltLeft(Vector3 position, Vector2 orientation, NodeScriptableObject so) : base(
+        public ConveyorBeltLeft(Vector3 position, Vector2 orientation) : base(
             position,
-            orientation, so)
+            orientation)
         {
         }
 

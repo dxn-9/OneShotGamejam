@@ -7,9 +7,8 @@ namespace Nodes
 {
     public class StartNode : Node
     {
-        public StartNode(Vector3 position, Vector2 orientation, NodeScriptableObject so) : base(position,
-            orientation,
-            so)
+        public StartNode(Vector3 position, Vector2 orientation) : base(position,
+            orientation)
         {
         }
 
