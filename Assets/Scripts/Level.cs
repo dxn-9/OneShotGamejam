@@ -8,13 +8,24 @@ using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Serialization;
+
+
+[Serializable]
+public struct Hazard
+{
+    public string type;
+    public Vector3 position;
+}
 
 // Responsible for creating the initial grid and displaying the game state
 [ExecuteInEditMode]
 public class Level : MonoBehaviour
 {
     [SerializeField] GameObject cubePrefab, startPrefab, endPrefab;
-    [HideInInspector] [SerializeField] public Vector3[] points;
+    [HideInInspector] [SerializeField] public Vector3[] terrain;
+    [HideInInspector] [SerializeField] public Hazard[] hazards;
+
     [SerializeField] public Vector3 startPoint, endPoint;
     [SerializeField] Transform playerObjects;
     [SerializeField] NodeScriptableObject[] availableNodes;
@@ -23,7 +34,7 @@ public class Level : MonoBehaviour
 
     public void SetPoints(Vector3[] points)
     {
-        this.points = points;
+        this.terrain = points;
         PlaceTiles();
     }
 
@@ -41,7 +52,7 @@ public class Level : MonoBehaviour
 
     void OnEnable()
     {
-        if (points == null) points = new Vector3[] { };
+        if (terrain == null) terrain = new Vector3[] { };
         playerNodes = new Dictionary<Vector3, Transform>();
         PlaceTiles();
     }
@@ -53,7 +64,7 @@ public class Level : MonoBehaviour
             DestroyImmediate(transform.GetChild(i).gameObject);
         }
 
-        foreach (var point in points)
+        foreach (var point in terrain)
         {
             Instantiate(cubePrefab, point, Quaternion.identity, transform);
         }
@@ -102,20 +113,31 @@ class LevelTool : Editor
         End
     }
 
+    enum PlacingType
+    {
+        Node,
+        Hazard
+    }
+
     HashSet<Vector3> candidatePoints, serializedPoints;
-    SerializedProperty points;
+    SerializedProperty terrain;
+    int currentLevel = 0;
     PlacingMode placingMode = PlacingMode.Delete;
+    PlacingType placingType = PlacingType.Node;
 
 
     void CalculateCandidatePoints()
     {
         candidatePoints.Clear();
         serializedPoints = new HashSet<Vector3>();
-        for (int i = 0; i < points.arraySize; i++)
+        for (int i = 0; i < terrain.arraySize; i++)
         {
-            SerializedProperty pointSerialized = points.GetArrayElementAtIndex(i);
+            SerializedProperty pointSerialized = terrain.GetArrayElementAtIndex(i);
             Vector3 point = pointSerialized.vector3Value;
-            serializedPoints.Add(point);
+            if (point.y == currentLevel)
+            {
+                serializedPoints.Add(point);
+            }
         }
 
         foreach (var point in serializedPoints)
@@ -130,13 +152,13 @@ class LevelTool : Editor
             }
         }
 
-        if (candidatePoints.Count == 0) candidatePoints.Add(Vector3.zero);
+        if (candidatePoints.Count == 0) candidatePoints.Add(Vector3.zero + new Vector3(0, currentLevel, 0));
     }
 
     void OnEnable()
     {
         candidatePoints = new HashSet<Vector3>();
-        points = serializedObject.FindProperty("points");
+        terrain = serializedObject.FindProperty("terrain");
         CalculateCandidatePoints();
     }
 
@@ -147,11 +169,10 @@ class LevelTool : Editor
             if (target is Level level)
             {
                 Undo.RecordObject(level, "Add Grid Point");
-                level.SetPoints(level.points.Append(position).ToArray());
+                level.SetPoints(level.terrain.Append(position).ToArray());
                 EditorUtility.SetDirty(level);
                 serializedObject.Update();
                 serializedObject.ApplyModifiedProperties();
-                Debug.Log("Look at custom grid!");
                 return true;
             }
         }
@@ -161,8 +182,6 @@ class LevelTool : Editor
 
     protected virtual void OnSceneGUI()
     {
-        // Gizmos.DrawCube(0.5f * Vector3.one, Vector3.one);
-
         var isDirty = false;
         foreach (var point in candidatePoints)
         {
@@ -172,11 +191,6 @@ class LevelTool : Editor
             }
         }
 
-        if (isDirty)
-        {
-            CalculateCandidatePoints();
-        }
-
         Handles.BeginGUI();
 
         GUIStyle style = new GUIStyle();
@@ -184,25 +198,41 @@ class LevelTool : Editor
         texture.SetPixel(0, 0, Color.black);
         texture.Apply();
         style.normal.background = texture;
+
+        GUIStyle labelStyle = new GUIStyle();
+        labelStyle.stretchWidth = false;
         using (new GUILayout.HorizontalScope(style))
         {
-            if (GUILayout.Toggle(placingMode == PlacingMode.Delete, "Delete"))
-            {
-                placingMode = PlacingMode.Delete;
-            }
+            placingMode = (PlacingMode)GUILayout.Toolbar((int)placingMode, new string[] { "Delete", "Start", "End" });
+        }
 
-            if (GUILayout.Toggle(placingMode == PlacingMode.Start, "Start"))
+        using (new GUILayout.HorizontalScope(style))
+        {
+            placingType = (PlacingType)GUILayout.Toolbar((int)placingType, new string[] { "Node", "Hazard" });
+            using (new GUILayout.HorizontalScope(labelStyle))
             {
-                placingMode = PlacingMode.Start;
-            }
+                if (GUILayout.Button("-"))
+                {
+                    currentLevel--;
+                    isDirty = true;
+                }
 
-            if (GUILayout.Toggle(placingMode == PlacingMode.End, "End"))
-            {
-                placingMode = PlacingMode.End;
+                GUILayout.Label("Level: " + currentLevel);
+                if (GUILayout.Button("+"))
+                {
+                    currentLevel++;
+                    isDirty = true;
+                }
             }
         }
 
         Handles.EndGUI();
+
+        if (isDirty)
+        {
+            CalculateCandidatePoints();
+        }
+
 
         var e = Event.current;
         // Reset
@@ -226,22 +256,22 @@ class LevelTool : Editor
             if (sceneView != null)
             {
                 Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
-                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+                Plane groundPlane = new Plane(Vector3.up, new Vector3(0, currentLevel, 0));
                 if (groundPlane.Raycast(ray, out float distance))
                 {
                     Vector3 position = ray.GetPoint(distance);
-                    Vector3 gridPosition = new Vector3(Mathf.Round(position.x), 0f, Mathf.Round(position.z));
+                    Vector3 gridPosition = new Vector3(Mathf.Round(position.x), currentLevel, Mathf.Round(position.z));
 
                     if (target is Level customGrid)
                     {
-                        if (customGrid.points.Contains(gridPosition))
+                        if (customGrid.terrain.Contains(gridPosition))
                         {
                             e.Use();
                             switch (placingMode)
                             {
                                 case PlacingMode.Delete:
                                     Undo.RecordObject(customGrid, "Remove grid point");
-                                    customGrid.SetPoints(customGrid.points.Where(p => p != gridPosition).ToArray());
+                                    customGrid.SetPoints(customGrid.terrain.Where(p => p != gridPosition).ToArray());
                                     EditorUtility.SetDirty(customGrid);
                                     serializedObject.Update();
                                     serializedObject.ApplyModifiedProperties();

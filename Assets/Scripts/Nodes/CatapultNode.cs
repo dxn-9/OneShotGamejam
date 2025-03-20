@@ -17,6 +17,27 @@ namespace Nodes
         public override Vector2 Output => Vector2.up;
         public override bool CanBeDeleted => true;
 
+        public override Vector3 PlaceItemPosition(float t)
+        {
+            var posUp = position + Vector3.up;
+            if (t <= .15f)
+            {
+                var inputPos = posUp + -CalculateInputWS().ToGridCoord() * 0.5f;
+                return Vector3.Lerp(inputPos, position + Vector3.up, t / .15f);
+            }
+            else
+            {
+                var outputPos = (posUp + CalculateOutputWS().ToGridCoord() * Range) -
+                                (CalculateOutputWS().ToGridCoord() * 0.5f);
+                // Since t >= .15
+                float tt = (t - 0.15f) / (1.0f - 0.15f);
+                float y = Mathf.Sin(tt * Mathf.PI);
+
+                return new Vector3(Mathf.Lerp(posUp.x, outputPos.x, tt), y + Mathf.Lerp(posUp.y, outputPos.y, tt),
+                    Mathf.Lerp(posUp.z, outputPos.z, tt));
+            }
+        }
+
         public override void Tick(NodeGrid grid, int tickCount)
         {
             if (updateTick == tickCount)

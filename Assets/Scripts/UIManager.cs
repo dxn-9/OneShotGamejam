@@ -38,7 +38,6 @@ public class UIManager : MonoBehaviour
 
     public void SetCurrentNodeUI(int index)
     {
-        Debug.Log(index);
         for (int i = 0; i < nodesUI.Length; i++)
         {
             SetNodeActive(nodesUI[i], i == index);

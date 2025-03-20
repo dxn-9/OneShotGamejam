@@ -16,6 +16,11 @@ namespace Nodes
         public override Vector2 Output => Vector2.zero;
         public override bool CanBeDeleted => false;
 
+        public override Vector3 PlaceItemPosition(float t)
+        {
+            return position + Vector3.up;
+        }
+
         public override void Tick(NodeGrid grid, int tickCount)
         {
             if (holdsItem)

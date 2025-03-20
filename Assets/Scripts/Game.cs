@@ -1,4 +1,5 @@
 ﻿using System;
+using Nodes;
 using ScriptableObjects;
 using Unity.Cinemachine;
 using UnityEngine;
@@ -22,6 +23,14 @@ public class Game : MonoBehaviour
     [SerializeField] CameraController camera;
     [SerializeField] public Level level;
     [SerializeField] public Transform itemIndicator;
+    [SerializeField] float tickDuration = 0.3f;
+    [SerializeField] public int maxStuckTicks = 5;
+    [SerializeField] Transform buildingControls;
+    int tickCount;
+    float currentTickDuration;
+
+    public Node ActiveNode => gridManager.active;
+
 
     public NodeScriptableObject SelectedNodeSO => uiManager.GetSelectedNodeSO();
 
@@ -41,6 +50,17 @@ public class Game : MonoBehaviour
         gridManager.OnNodeMark += (sender, args) => level.MarkForDeletion(args.node);
         gridManager.OnNodeDelete += (sender, args) => level.DeleteNode(args.node);
     }
+
+    // Assume that the check for it being placeable is already done.
+    public void PlaceBlock(Vector3 dir)
+    {
+        var nodePosition = gridManager.active.position + dir;
+        gridManager.PlaceNode(nodePosition);
+    }
+
+    public bool CanPlaceBlock(Vector3 worldPos)
+        => gridManager.CanPlaceNode(worldPos);
+
 
     void Start()
     {
@@ -80,7 +100,27 @@ public class Game : MonoBehaviour
             camera.target = level.playerNodes[gridManager.active.position];
             if (gameMode == Mode.Simulation)
             {
-                itemIndicator.position = camera.target.position + Vector3.up;
+                camera.target = itemIndicator;
+            }
+        }
+
+        if (gameMode == Mode.Building)
+        {
+            buildingControls.gameObject.SetActive(true);
+            buildingControls.position = gridManager.active.position + Vector3.up;
+        }
+
+        if (gameMode == Mode.Simulation)
+        {
+            buildingControls.gameObject.SetActive(false);
+            currentTickDuration -= Time.deltaTime;
+            itemIndicator.position =
+                gridManager.active.PlaceItemPosition(1.0f - Mathf.Max(currentTickDuration / tickDuration, 0.0f));
+            if (currentTickDuration <= 0.0f)
+            {
+                gridManager.SimulationStep(tickCount);
+                currentTickDuration = tickDuration + Mathf.Abs(currentTickDuration);
+                tickCount++;
             }
         }
     }

@@ -36,6 +36,7 @@ namespace Nodes
         public bool markedForDeletion;
         public virtual int Range => 1;
 
+
         public Vector2 CalculateOutputWS()
         {
             return Quaternion.Euler(0, 0, Vector2.SignedAngle(Vector2.up, orientation)) * Output;
@@ -54,6 +55,10 @@ namespace Nodes
         public abstract string NodeName { get; }
         public abstract Vector2 Input { get; }
         public abstract Vector2 Output { get; }
+
         public abstract bool CanBeDeleted { get; }
+
+        //Places the item on the node, t is 0..1 and is the time of the tick between when it started, and when it ends.
+        public abstract Vector3 PlaceItemPosition(float t);
     }
 }

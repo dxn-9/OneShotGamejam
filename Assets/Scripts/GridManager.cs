@@ -14,7 +14,6 @@ public class GridManager : MonoBehaviour
 {
     [SerializeField, Min(0.5f)] float gridSize;
     [SerializeField] NodeScriptableObject[] availableNodes;
-    [SerializeField] float simulationTickDuration = 0.3f;
 
     public event EventHandler<NodeEventArgs> OnNodePlace;
     public event EventHandler<NodeEventArgs> OnNodeChange;
@@ -27,17 +26,13 @@ public class GridManager : MonoBehaviour
     }
 
     public NodeGrid grid;
-    int tickCount;
     public Node active, markedActive;
-    float currentSimulationDuration;
     bool canPlace;
-    int maxStuckTicks = 5; // If the active object, has the item for 5 ticks, it's stuck
     int stuckCounter = 0;
 
 
     void Awake()
     {
-        currentSimulationDuration = simulationTickDuration;
         grid = new NodeGrid();
     }
 
@@ -54,7 +49,7 @@ public class GridManager : MonoBehaviour
 
 
     // Ticks the active node to transport the item. If it returns true it means we've finished traversing the list.
-    void SimulationStep()
+    public void SimulationStep(int tickCount)
     {
         foreach (var node in grid.Values)
         {
@@ -64,16 +59,15 @@ public class GridManager : MonoBehaviour
                 if (node == active) stuckCounter++;
                 else stuckCounter = 0;
                 active = node;
-                if (stuckCounter >= maxStuckTicks) Game.I.GameOver(false);
+                if (stuckCounter >= Game.I.maxStuckTicks) Game.I.GameOver(false);
             }
         }
-
-        tickCount++;
     }
 
 
-    void PlaceNode(Vector3 gridPoint)
+    public void PlaceNode(Vector3 gridPoint)
     {
+        gridPoint = gridPoint.SnapToGrid();
         if (Utils.typeMap.TryGetValue(Game.I.SelectedNodeSO.nodeName, out var nodeClass))
         {
             Debug.Log(Game.I.SelectedNodeSO.nodeName);
@@ -109,9 +103,9 @@ public class GridManager : MonoBehaviour
 
 
             var node = (Node)Activator.CreateInstance(nodeClass, gridPoint, dir);
-            grid[gridPoint.SnapToGrid()] = node;
+            grid[gridPoint] = node;
             active = node;
-            OnNodePlace?.Invoke(this, new NodeEventArgs() { node = grid[gridPoint.SnapToGrid()] });
+            OnNodePlace?.Invoke(this, new NodeEventArgs() { node = grid[gridPoint] });
         }
         else
         {
@@ -139,7 +133,7 @@ public class GridManager : MonoBehaviour
 
             if (canPlace && Input.GetMouseButtonDown(0))
             {
-                PlaceNode(gridPoint);
+                // PlaceNode(gridPoint);
             }
             else if (Input.GetMouseButtonDown(1))
             {
@@ -201,15 +195,6 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-        else if (Game.I.gameMode == Mode.Simulation)
-        {
-            currentSimulationDuration -= Time.deltaTime;
-            if (currentSimulationDuration <= 0.0f)
-            {
-                SimulationStep();
-                currentSimulationDuration = simulationTickDuration + Mathf.Abs(currentSimulationDuration);
-            }
-        }
     }
 
     void MarkDeletion(Node node)
@@ -234,12 +219,13 @@ public class GridManager : MonoBehaviour
         return gridPoint;
     }
 
-    bool CanPlaceNode(Vector3 position)
+    public bool CanPlaceNode(Vector3 position)
     {
         // If it's already occupied, we cannot place a node.
         if (grid.ContainsKey(position.SnapToGrid())) return false;
 
-        if (!Game.I.level.points.Contains(position)) return false;
+        if (!Game.I.level.terrain.Contains(position)) return false;
+        if (Game.I.level.terrain.Contains(position + Vector3.up)) return false;
 
         if (Mathf.RoundToInt(Mathf.Abs(active.position.x - position.x)) == active.Range)
         {

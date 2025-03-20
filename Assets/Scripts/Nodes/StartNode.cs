@@ -16,6 +16,7 @@ namespace Nodes
         public override Vector2 Input => Vector2.zero;
         public override Vector2 Output => Vector2.zero;
         public override bool CanBeDeleted => false;
+        Vector3 connectedNodePosition = Vector3.zero;
 
 
         public override void Tick(NodeGrid grid, int tickCount)
@@ -58,6 +59,7 @@ namespace Nodes
                     if (neighbour.CalculateInputWS() == (neighbour.position - position).ToDir())
                     {
                         node = neighbour;
+                        connectedNodePosition = node.position;
                         return true;
                     }
                 }
@@ -67,6 +69,7 @@ namespace Nodes
                     if (neighbour.CalculateInputWS() == (neighbour.position - position).ToDir())
                     {
                         node = neighbour;
+                        connectedNodePosition = node.position;
                         return true;
                     }
                 }
@@ -74,6 +77,19 @@ namespace Nodes
 
             node = null;
             return false;
+        }
+
+        public override Vector3 PlaceItemPosition(float t)
+        {
+            if (connectedNodePosition != Vector3.zero)
+            {
+                Vector3 d = connectedNodePosition - position;
+                return Vector3.Lerp(position + Vector3.up, position + d * 0.5f + Vector3.up, t);
+            }
+            else
+            {
+                return position + Vector3.up;
+            }
         }
 
         public override string NodeName => "StartNode";
