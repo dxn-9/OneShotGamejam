@@ -33,23 +33,21 @@ public class ArrowIndicator : MonoBehaviour
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         var activeNode = Game.I.ActiveNode;
 
-        if (Game.I.CanPlaceBlock((activeNode.position + direction).SnapToGrid()))
+        if (Game.I.CanPlaceNode((activeNode.position + direction * activeNode.Range).SnapToGrid()))
         {
             material.SetFloat("_Alpha", 0.5f);
             if (Physics.Raycast(ray, out var hit, 1000f, LayerMask.GetMask("Overlay")) &&
                 hit.transform.parent == transform)
             {
-                material.SetFloat("_Alpha", 1.0f);
+                material.SetFloat("_Alpha", 0.9f);
                 if (Input.GetMouseButtonDown(0))
                 {
-                    Game.I.PlaceBlock(direction);
+                    Game.I.PlaceBlock(direction * activeNode.Range);
                 }
             }
         }
         else
         {
-            Debug.Log("Cannot place " + (activeNode.position + direction));
-
             material.SetFloat("_Alpha", 0.0f);
         }
     }

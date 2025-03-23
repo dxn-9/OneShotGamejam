@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Extensions;
 using ScriptableObjects;
 using UnityEngine;
 
 namespace Nodes
 {
-    public class StartNode : Node
+    public class StartNode : Node, MultiDir
     {
         public StartNode(Vector3 position, Vector2 orientation) : base(position,
             orientation)
@@ -36,7 +37,13 @@ namespace Nodes
                 else
                 {
                     Debug.LogError("Failed to send item to next node. Item is stuck.");
+                    Game.I.GameOver(false, "Failed to send item to next node. Item is stuck.");
                 }
+            }
+            else if (holdsItem && !HasNextNode(grid, out nextNode))
+            {
+                Debug.LogError("Could not find a entry point. Simulation cannot start.");
+                Game.I.GameOver(false, "Could not find a entry point. Simulation cannot start.");
             }
         }
 
@@ -93,5 +100,7 @@ namespace Nodes
         }
 
         public override string NodeName => "StartNode";
+        public Type GetLeft => typeof(StartNode);
+        public Type GetRight => typeof(StartNode);
     }
 }

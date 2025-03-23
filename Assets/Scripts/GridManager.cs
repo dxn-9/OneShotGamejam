@@ -28,23 +28,18 @@ public class GridManager : MonoBehaviour
     public NodeGrid grid;
     public Node active, markedActive;
     bool canPlace;
-    int stuckCounter = 0;
-
-
-    void Awake()
-    {
-        grid = new NodeGrid();
-    }
 
 
     void Start()
     {
-        grid[Game.I.level.startPoint] =
-            new StartNode(Game.I.level.startPoint, Vector2.up);
-        grid[Game.I.level.endPoint] =
-            new EndNode(Game.I.level.endPoint, Vector2.up);
+        grid = new NodeGrid
+        {
+            [Game.I.level.startPoint] = new StartNode(Game.I.level.startPoint, Vector2.up),
+            [Game.I.level.endPoint] = new EndNode(Game.I.level.endPoint, Vector2.up)
+        };
         active = grid.GetStart();
         grid.GetStart().ReceiveItem(Vector2.zero);
+        Game.I.itemIndicator.position = active.ItemPosition;
     }
 
 
@@ -56,10 +51,14 @@ public class GridManager : MonoBehaviour
             node.Tick(grid, tickCount);
             if (node.holdsItem)
             {
-                if (node == active) stuckCounter++;
-                else stuckCounter = 0;
+                if (Game.I.level.hazards.ContainsAt(node.ItemPosition))
+                {
+                    Debug.LogError("Hazard hit");
+                    Game.I.GameOver(false, "Hazard hit");
+                    return;
+                }
+
                 active = node;
-                if (stuckCounter >= Game.I.maxStuckTicks) Game.I.GameOver(false);
             }
         }
     }
@@ -120,27 +119,21 @@ public class GridManager : MonoBehaviour
         {
             // Skip over ui elements
             if (EventSystem.current.IsPointerOverGameObject())
+            {
+                Debug.Log("Is Over game object");
                 return;
-
-            // Find the xz intersection
-            Vector2 screenMouse = Input.mousePosition;
-            var screenRay = Camera.main.ScreenPointToRay(screenMouse);
-            var xzIntersection = screenRay.origin - screenRay.direction * (screenRay.origin.y / screenRay.direction.y);
-
-            var gridPoint = CalculateGridPoint(xzIntersection);
-            canPlace = CanPlaceNode(gridPoint);
-
-
-            if (canPlace && Input.GetMouseButtonDown(0))
-            {
-                // PlaceNode(gridPoint);
             }
-            else if (Input.GetMouseButtonDown(1))
+
+            // Handle deletion of nodes
+            if (Input.GetMouseButtonDown(1))
             {
+                Debug.Log("Right click");
+                Vector2 screenMouse = Input.mousePosition;
+                var screenRay = Camera.main.ScreenPointToRay(screenMouse);
                 if (Physics.Raycast(screenRay, out var nodeHit, 1000f, LayerMask.GetMask("Node")))
                 {
                     var nodePosition = nodeHit.transform.position - new Vector3(0f, 0.5f, 0f);
-                    if (grid.TryGetValue(nodePosition, out var clickedNode))
+                    if (grid.TryGetValue(nodePosition.SnapToGrid(), out var clickedNode))
                     {
                         if (clickedNode.CanBeDeleted && !clickedNode.markedForDeletion)
                         {
@@ -227,16 +220,24 @@ public class GridManager : MonoBehaviour
         if (!Game.I.level.terrain.Contains(position)) return false;
         if (Game.I.level.terrain.Contains(position + Vector3.up)) return false;
 
-        if (Mathf.RoundToInt(Mathf.Abs(active.position.x - position.x)) == active.Range)
-        {
-            if (active.position.z == position.z) return true;
-        }
 
-        if (Mathf.RoundToInt(Mathf.Abs(active.position.z - position.z)) == active.Range)
+        if (active is MultiDir)
         {
-            if (active.position.x == position.x) return true;
-        }
+            if (Mathf.RoundToInt(Mathf.Abs(active.position.x - position.x)) == active.Range)
+            {
+                if (active.position.z == position.z) return true;
+            }
 
+            if (Mathf.RoundToInt(Mathf.Abs(active.position.z - position.z)) == active.Range)
+            {
+                if (active.position.x == position.x) return true;
+            }
+        }
+        else
+        {
+            var activeDir = active.CalculateOutputWS() * active.Range;
+            if (position == (active.position + activeDir.ToGridCoord()).SnapToGrid()) return true;
+        }
 
         return false;
     }

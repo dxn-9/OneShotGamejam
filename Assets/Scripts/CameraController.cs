@@ -2,17 +2,24 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField] float damping = 0.3f;
+    float damping = 2.5f;
 
 
     public Transform target;
     Vector3 initialOffset;
     Quaternion initialRotation;
+    float referenceAspect = 16f / 9f;
+    public float referenceOrthographicSize = 5f;
+    Camera cam;
 
     void Awake()
     {
         initialOffset = transform.position;
         initialRotation = transform.rotation;
+
+        cam = GetComponent<Camera>();
+        float currentAspect = (float)Screen.width / Screen.height;
+        cam.orthographicSize = (referenceAspect / currentAspect) * referenceOrthographicSize;
     }
 
     void Update()
@@ -23,6 +30,6 @@ public class CameraController : MonoBehaviour
         }
 
         var targetPosition = target.position + initialOffset;
-        transform.position = Vector3.Lerp(transform.position, targetPosition, damping);
+        transform.position = Vector3.Lerp(transform.position, targetPosition, damping * Time.deltaTime);
     }
 }

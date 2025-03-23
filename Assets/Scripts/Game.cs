@@ -2,6 +2,7 @@
 using Nodes;
 using ScriptableObjects;
 using Unity.Cinemachine;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -24,8 +25,14 @@ public class Game : MonoBehaviour
     [SerializeField] public Level level;
     [SerializeField] public Transform itemIndicator;
     [SerializeField] float tickDuration = 0.3f;
-    [SerializeField] public int maxStuckTicks = 5;
-    [SerializeField] Transform buildingControls;
+    [SerializeField] GameObject buildingControlsPrefab;
+    [SerializeField] public SoundManager soundManager;
+    [SerializeField] TrainController trainController;
+
+    Transform buildingControls;
+    bool isInitialized;
+
+    string currentLevel;
     int tickCount;
     float currentTickDuration;
 
@@ -41,14 +48,79 @@ public class Game : MonoBehaviour
             I = this;
         }
 
+        isInitialized = false;
 
-        SceneManager.LoadScene("UIScene", LoadSceneMode.Additive);
+        currentLevel = "Level1";
 
-        gameMode = Mode.Building;
-        gridManager.OnNodePlace += (sender, args) => level.AddPlayerNode(args.node);
-        gridManager.OnNodeChange += (sender, args) => level.ChangePlayerNode(args.node);
-        gridManager.OnNodeMark += (sender, args) => level.MarkForDeletion(args.node);
-        gridManager.OnNodeDelete += (sender, args) => level.DeleteNode(args.node);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
+        LoadMenu();
+        // SceneManager.LoadScene("UIScene", LoadSceneMode.Additive);
+        // SceneManager.LoadScene("Level1", LoadSceneMode.Additive);
+
+        GameObject[] objs = GameObject.FindGameObjectsWithTag("DontDestroy");
+        foreach (var obj in objs) DontDestroyOnLoad(obj);
+    }
+
+    void LoadMenu()
+    {
+        isInitialized = false;
+        SceneManager.LoadScene("MenuScene");
+    }
+
+    void OnNodePlace(object sender, GridManager.NodeEventArgs e)
+    {
+        level.AddPlayerNode(e.node);
+    }
+
+    void OnNodeChange(object sender, GridManager.NodeEventArgs e)
+    {
+        level.ChangePlayerNode(e.node);
+    }
+
+    void OnNodeMark(object sender, GridManager.NodeEventArgs e)
+    {
+        level.MarkForDeletion(e.node);
+    }
+
+    void OnNodeDelete(object sender, GridManager.NodeEventArgs e)
+    {
+        level.DeleteNode(e.node);
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "MenuScene")
+        {
+            uiManager.gameObject.SetActive(false);
+            itemIndicator.gameObject.SetActive(false);
+            return;
+        }
+
+        if (scene.name == currentLevel)
+        {
+            uiManager.gameObject.SetActive(true);
+            itemIndicator.gameObject.SetActive(true);
+            gameMode = Mode.Building;
+            gridManager = GameObject.FindGameObjectWithTag("GridManager").GetComponent<GridManager>();
+            level = GameObject.FindGameObjectWithTag("Level").GetComponent<Level>();
+            buildingControls = Instantiate(buildingControlsPrefab).transform;
+            gridManager.OnNodePlace += OnNodePlace;
+            gridManager.OnNodeChange += OnNodeChange;
+            gridManager.OnNodeMark += OnNodeMark;
+            gridManager.OnNodeDelete += OnNodeDelete;
+            isInitialized = true;
+        }
+
+        Debug.Log("Scene loaded " + scene.name);
+        // SceneManager.sceneLoaded -= OnSceneLoaded;
+        //
+    }
+
+    public void LoadLevel(string levelName)
+    {
+        currentLevel = levelName;
+        SceneManager.LoadScene(levelName);
     }
 
     // Assume that the check for it being placeable is already done.
@@ -58,7 +130,7 @@ public class Game : MonoBehaviour
         gridManager.PlaceNode(nodePosition);
     }
 
-    public bool CanPlaceBlock(Vector3 worldPos)
+    public bool CanPlaceNode(Vector3 worldPos)
         => gridManager.CanPlaceNode(worldPos);
 
 
@@ -79,22 +151,51 @@ public class Game : MonoBehaviour
         gameMode = Mode.Simulation;
     }
 
-    public void GameOver(bool win)
+    void UnloadScene()
     {
-        Debug.Log("GameOver" + win);
+        gridManager.OnNodePlace -= OnNodePlace;
+        gridManager.OnNodeChange -= OnNodeChange;
+        gridManager.OnNodeMark -= OnNodeMark;
+        gridManager.OnNodeDelete -= OnNodeDelete;
+    }
+
+    public void NextLevel()
+    {
+        isInitialized = false;
+        UnloadScene();
+        LoadLevel(Utils.GetNextLevel(currentLevel));
+    }
+
+    public void RestartLevel()
+    {
+        isInitialized = false;
+        UnloadScene();
+        LoadLevel(currentLevel);
+    }
+
+    public void GameOver(bool win, string reason = "")
+    {
+        uiManager.ShowGameOverUI(win, reason);
+        gameMode = Mode.EndLevel;
         if (win)
         {
-            // TODO: Implement win logic
-            gameMode = Mode.Building;
+            soundManager.PlayWinSound();
         }
         else
         {
-            gameMode = Mode.Building;
+            soundManager.PlayLooseSound();
         }
     }
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            LoadMenu();
+            return;
+        }
+
+        if (!isInitialized) return;
         if (gridManager.active != null)
         {
             camera.target = level.playerNodes[gridManager.active.position];
@@ -108,14 +209,20 @@ public class Game : MonoBehaviour
         {
             buildingControls.gameObject.SetActive(true);
             buildingControls.position = gridManager.active.position + Vector3.up;
+            trainController.IsRunning(false);
         }
 
         if (gameMode == Mode.Simulation)
         {
+            trainController.IsRunning(true);
             buildingControls.gameObject.SetActive(false);
             currentTickDuration -= Time.deltaTime;
-            itemIndicator.position =
+            var nextPos =
                 gridManager.active.PlaceItemPosition(1.0f - Mathf.Max(currentTickDuration / tickDuration, 0.0f));
+            var dtPos = nextPos - itemIndicator.position;
+            itemIndicator.position = nextPos;
+            itemIndicator.rotation = Quaternion.Lerp(itemIndicator.rotation, Quaternion.LookRotation(dtPos),
+                Time.deltaTime * 3.5f);
             if (currentTickDuration <= 0.0f)
             {
                 gridManager.SimulationStep(tickCount);

@@ -5,7 +5,7 @@ using NodeGrid = System.Collections.Generic.Dictionary<UnityEngine.Vector2, Node
 
 namespace Nodes
 {
-    public class ConveyorBeltLeft : ConveyorBeltRight
+    public class ConveyorBeltLeft : ConveyorBelt
     {
         public ConveyorBeltLeft(Vector3 position, Vector2 orientation) : base(
             position,

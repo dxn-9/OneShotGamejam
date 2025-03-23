@@ -19,6 +19,21 @@ namespace Extensions
             new Vector3(Mathf.Round(v.x), 0, Mathf.Round(v.y));
     }
 
+    public static class HazardExt
+    {
+        public static bool ContainsAt(this Hazard[] hazards, Vector3 pos)
+        {
+            for (int i = 0; i < hazards.Length; i++)
+            {
+                var h = hazards[i];
+                if (h.position == pos) return true;
+            }
+
+            return false;
+        }
+    }
+
+
     // public static class OrientationExtensions
     // {
     //     public static Orientation Next(this Orientation current)
